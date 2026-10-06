@@ -1,0 +1,10 @@
+services:
+  api:
+    build: ./backend
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      API_KEY: ${API_KEY:?Set a random API_KEY in .env}
+      ENABLE_MOVIEBOX: ${ENABLE_MOVIEBOX:-false}
+      PORT: 8080
+    restart: unless-stopped

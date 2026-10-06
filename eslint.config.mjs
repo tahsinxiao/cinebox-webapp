@@ -1,0 +1,6 @@
+import { FlatCompat } from '@eslint/eslintrc';
+const compat = new FlatCompat({ baseDirectory: process.cwd() });
+export default [
+  { ignores: ['.next/**', 'node_modules/**', 'backend/**', 'next-env.d.ts', 'playwright-report/**', 'test-results/**'] },
+  ...compat.extends('next/core-web-vitals', 'next/typescript')
+];

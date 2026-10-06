@@ -1,0 +1,11 @@
+[package]
+name = "cinebox-api"
+version = "0.1.0"
+edition = "2024"
+[dependencies]
+axum = "0.8"
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+url = "2"
+moviebox-tui = { git = "https://github.com/mesamirh/MovieBox-Tui", rev = "751fd0ec49e114d0ae849bf1dc52fec869d58e7d" }
