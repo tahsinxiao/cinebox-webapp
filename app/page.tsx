@@ -7,7 +7,11 @@ import { getHomeRows } from "@/lib/content";
 import { PosterSkeleton } from "@/components/poster-card";
 import type { CatalogItem, CatalogRow } from "@/lib/types";
 
-export const revalidate = 300;
+// Rendered per request, not at build time: Vercel builds in iad1 (US East),
+// where the MovieBox BFF replies "Service not available in current region".
+// Serving dynamically means the fetch runs in the function region (bom1),
+// which the provider does serve. The in-process memo keeps it cheap.
+export const dynamic = "force-dynamic";
 
 function pickHero(rows: CatalogRow[]): { hero: CatalogItem[]; rest: CatalogRow[] } {
   const heroRow = rows.find((r) => r.kind === "hero" && r.items.length > 0);

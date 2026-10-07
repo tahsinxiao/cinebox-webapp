@@ -3,7 +3,11 @@ import { CardGrid, PageHeading } from "@/components/grid";
 import { OfflineBadge } from "@/components/brand";
 import { getCatalog } from "@/lib/content";
 
-export const revalidate = 300;
+// Rendered per request, not at build time: Vercel builds in iad1 (US East),
+// where the MovieBox BFF replies "Service not available in current region".
+// Serving dynamically means the fetch runs in the function region (bom1),
+// which the provider does serve. The in-process memo keeps it cheap.
+export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Series",
   description: "Binge full seasons of the best series and TV shows, free on well-cinebox.",
