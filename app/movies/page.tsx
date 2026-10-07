@@ -3,7 +3,7 @@ import { CardGrid, PageHeading } from "@/components/grid";
 import { OfflineBadge } from "@/components/brand";
 import { getCatalog } from "@/lib/content";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Movies",
   description: "Stream free movies in HD on well-cinebox — blockbusters, indies and everything between.",
