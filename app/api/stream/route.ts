@@ -1,3 +1,4 @@
+import { outboundFetch } from "@/lib/net";
 import { verifyStreamToken } from "@/lib/stream-token";
 
 export const runtime = "nodejs";
@@ -40,7 +41,7 @@ async function relay(request: Request, method: "GET" | "HEAD") {
 
   let upstream: Response;
   try {
-    upstream = await fetch(target.url, { method, headers, redirect: "follow", cache: "no-store" });
+    upstream = await outboundFetch(target.url, { method, headers, redirect: "follow", cache: "no-store" });
   } catch (err) {
     return new Response(`upstream fetch failed: ${err instanceof Error ? err.message : "unknown"}`, {
       status: 502,

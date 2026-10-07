@@ -2,7 +2,7 @@
   "name": "well-cinebox",
   "version": "1.0.0",
   "private": true,
-  "description": "well-cinebox \u2014 Free Movie & Series Streaming Webapp (HBO Max style UI) powered by the MovieBox-Tui provider contract",
+  "description": "well-cinebox — Free Movie & Series Streaming Webapp (HBO Max style UI) powered by the MovieBox-Tui provider contract",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -18,7 +18,8 @@
     "next": "^15.5.27",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "server-only": "^0.0.1"
+    "server-only": "^0.0.1",
+    "undici": "^8.11.2"
   },
   "devDependencies": {
     "@types/node": "^26.6.4",

@@ -1,3 +1,4 @@
+import { outboundFetch } from "@/lib/net";
 import { verifyStreamToken } from "@/lib/stream-token";
 import { STREAM_REFERER } from "@/lib/moviebox/generated/upstream-contract";
 
@@ -22,7 +23,7 @@ export async function GET(request: Request) {
   if (!target) return new Response("invalid or expired token", { status: 403 });
 
   try {
-    const res = await fetch(target.url, {
+    const res = await outboundFetch(target.url, {
       headers: { referer: STREAM_REFERER, "user-agent": "Mozilla/5.0", accept: "*/*" },
       cache: "no-store",
     });

@@ -8,6 +8,7 @@
  *   • retry-on-status host rotation + 401/403 session invalidation
  *   • signed headers on every request
  */
+import { outboundFetch } from "../net";
 import { HOST_POOL, RETRY_STATUS_CODES } from "./generated/upstream-contract";
 import { buildSignedHeaders, generateClientIdentity, type ClientIdentity } from "./signing";
 
@@ -142,7 +143,7 @@ async function requestHosts(
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), requestTimeoutMs);
     try {
-      const res = await fetch(url, {
+      const res = await outboundFetch(url, {
         method,
         headers,
         body: body ?? undefined,

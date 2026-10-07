@@ -59,9 +59,15 @@ async function HomeContent() {
       {home.source === "offline" && (
         <div className="wrap -mt-6 mb-2 flex flex-wrap items-center gap-3">
           <OfflineBadge reason={home.error} />
-          <p className="text-[12px] text-white/45">
-            Live MovieBox feed unreachable from this environment — showing the bundled demo catalog. Deployed on
-            Vercel this rail set is replaced by the real catalog automatically.
+          <p className="max-w-3xl text-[12px] leading-relaxed text-white/45">
+            The MovieBox provider refuses datacenter traffic, so it can&rsquo;t be reached from this host and
+            these rails are the bundled demo catalog. Point{" "}
+            <code className="rounded bg-white/10 px-1 py-0.5 text-[11px] text-white/70">MOVIEBOX_PROXY_URL</code>{" "}
+            at a residential or mobile egress and the live catalog loads automatically &mdash; see{" "}
+            <a href="/api/debug/provider" className="text-brand-200 underline-offset-2 hover:underline">
+              /api/debug/provider
+            </a>{" "}
+            for a per-host report.
           </p>
         </div>
       )}

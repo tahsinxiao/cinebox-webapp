@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { HOST_POOL } from "@/lib/moviebox/generated/upstream-contract";
 import { buildSignedHeaders, generateClientIdentity } from "@/lib/moviebox/signing";
+import { outboundFetch, proxyUrl, usingProxy } from "@/lib/net";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -40,7 +41,7 @@ async function probe(label: string, host: string, mutate?: (h: Record<string, st
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT);
   try {
-    const res = await fetch(url, {
+    const res = await outboundFetch(url, {
       method: "POST",
       headers,
       body: BODY,
@@ -92,6 +93,7 @@ export async function GET() {
     {
       note: "temporary diagnostics — remove after the provider path is confirmed",
       egressRegion: process.env.VERCEL_REGION ?? "unknown",
+      proxy: usingProxy() ? `configured (${new URL(proxyUrl()!).host})` : "none — MOVIEBOX_PROXY_URL is not set",
       summary: {
         hostsProbed: HOST_POOL.length,
         anyOk: reachable.length > 0,

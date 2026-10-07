@@ -84,6 +84,39 @@ Other scripts:
 
 ---
 
+## ⚠️ Provider access: the MovieBox edge blocks datacenter IPs
+
+This is the single thing that decides whether you see the real catalog or the demo one.
+
+Measured from the live deployment (`/api/debug/provider`):
+
+| egress | request | response |
+| --- | --- | --- |
+| Vercel `iad1` (AWS us-east-1) | unsigned | `403 {"message":"Service not available in current region"}` |
+| Vercel `iad1` | signed, all 7 hosts | `440 {"message":"ServiceNotAvailable"}` |
+| Vercel `bom1` (AWS ap-south-1) | any headers, all 7 hosts | `440 {"message":"ServiceNotAvailable"}` |
+
+Removing the signature, swapping the user-agent and dropping `x-forwarded-for` change nothing — the
+edge keys off the **real TCP source IP**, and every Vercel region is a cloud ASN. The upstream TUI
+works because its users run it from home connections.
+
+**So: no Vercel region alone will reach the provider.** Set an egress proxy:
+
+```bash
+MOVIEBOX_PROXY_URL=http://user:pass@your-residential-proxy:8080
+```
+
+Every provider call, video byte and subtitle is routed through it. The exit IP must be
+residential or mobile in a served region (South/Southeast Asia, Africa work; US/EU are refused).
+Options: a residential-proxy service, a phone on mobile data running a proxy app, or a VPS on a
+non-cloud ASN. Verify with **`/api/debug/provider`** — it reports every host, status and body, plus
+whether the proxy is active.
+
+Without it the app runs fine and looks complete, but on the bundled **offline demo catalog**
+(amber badge, nothing playable).
+
+---
+
 ## Deploy to Vercel
 
 1. **Import the repo** — [vercel.com/new](https://vercel.com/new) → pick this repository.
@@ -95,6 +128,7 @@ Other scripts:
    | --- | --- | --- |
    | `STREAM_SIGNING_SECRET` | `openssl rand -hex 32` | **yes, in production** |
    | `NEXT_PUBLIC_SITE_URL` | `https://well-cinebox.vercel.app` | recommended |
+   | `MOVIEBOX_PROXY_URL` | residential/mobile HTTP(S) proxy | **yes, for a live catalog** — see above |
    | `MOVIEBOX_HOME_TAB` | `2` | no |
    | `MOVIEBOX_TIMEOUT_MS` | `12000` | no |
    | `CONTENT_CACHE_TTL_MS` | `300000` | no |
@@ -105,6 +139,9 @@ Other scripts:
 5. *(optional)* Create a **Deploy Hook** (Settings → Git → Deploy Hooks) and store the URL as the
    repository secret `VERCEL_DEPLOY_HOOK_URL`. The sync workflow pings it so a sync deploys even if
    Git-integration builds are paused.
+
+Functions are pinned to `bom1` (Mumbai) in `vercel.json` — closest served region to the audience and
+to a South-Asian proxy exit. Change `regions` if your proxy lives elsewhere.
 
 > **Streaming note:** `/api/stream` relays video bytes through a Vercel Function. That's the only way
 > to satisfy the CDN's Referer/Cookie requirements from a browser. It works on the Hobby plan but
@@ -146,7 +183,8 @@ That's it — from then on it is fully automatic.
 Run it by hand any time: **Actions → Upstream sync (MovieBox-Tui) → Run workflow**
 (you can pass any upstream branch/tag/SHA), or locally with `npm run sync:upstream`.
 
-Live status of what a deployment is running: **`/api/upstream`** · provider reachability: **`/api/health`**.
+Live status of what a deployment is running: **`/api/upstream`** · provider reachability:
+**`/api/health`** · per-host probe: **`/api/debug/provider`**.
 
 ### Want a literal GitHub fork too?
 
