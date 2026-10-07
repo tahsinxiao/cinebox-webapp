@@ -102,6 +102,20 @@ function absorbXUser(headers: Headers) {
   }
 }
 
+/**
+ * Statuses that make us rotate to the next host.
+ *
+ * Upstream's Rust list is the baseline, but the BFF edge also emits
+ * non-standard codes (observed: 440, an anti-bot / "login timeout" rejection)
+ * and we treat *any* 5xx the same way. Rotating is always cheaper than
+ * surfacing a hard failure, since the pool is 7 hosts deep.
+ */
+const EXTRA_RETRY_STATUS = [408, 409, 425, 440, 444, 449, 499];
+
+function shouldRotate(status: number): boolean {
+  return RETRY_STATUS_CODES.includes(status) || EXTRA_RETRY_STATUS.includes(status) || status >= 500;
+}
+
 async function requestHosts(
   method: "GET" | "POST",
   pathAndQuery: string,
@@ -120,6 +134,9 @@ async function requestHosts(
     }
     const idx = (start + i) % HOST_POOL.length;
     const url = `${HOST_POOL[idx]}${pathAndQuery}`;
+    // A fresh fingerprint per host attempt: a rejection is often tied to the
+    // device identity, so reusing it across the whole pool wastes the pool.
+    if (i > 0) st.identity = generateClientIdentity();
     const headers = buildSignedHeaders(method, url, body, authToken, st.identity);
 
     const controller = new AbortController();
@@ -135,7 +152,7 @@ async function requestHosts(
       absorbXUser(res.headers);
       lastStatus = res.status;
 
-      if (RETRY_STATUS_CODES.includes(res.status)) {
+      if (shouldRotate(res.status)) {
         st.activeHost = (idx + 1) % HOST_POOL.length;
         if (res.status === 429) {
           const retryAfter = Number(res.headers.get("retry-after"));
