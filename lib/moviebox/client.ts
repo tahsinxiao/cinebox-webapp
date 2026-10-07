@@ -76,7 +76,7 @@ function state(): ClientState {
   return g[GLOBAL_KEY] as ClientState;
 }
 
-export const requestTimeoutMs = Number(process.env.MOVIEBOX_TIMEOUT_MS ?? 12_000);
+export const requestTimeoutMs = Number(process.env.MOVIEBOX_TIMEOUT_MS ?? 8_000);
 
 export function userAgent(): string {
   return state().identity.userAgent;

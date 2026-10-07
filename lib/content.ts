@@ -9,6 +9,33 @@ import type { CatalogItem, CatalogResponse, CatalogRow, TitleDetails } from "./t
 
 const TTL_MS = Number(process.env.CONTENT_CACHE_TTL_MS ?? 5 * 60 * 1000);
 
+/**
+ * Hard ceiling for any provider round-trip.
+ *
+ * Next.js aborts a static page that takes longer than ~60s to generate, which
+ * would fail the whole Vercel build. The host pool can legitimately spend
+ * `MOVIEBOX_TIMEOUT_MS * 7` when every host is unreachable, so we race it and
+ * fall back to the offline catalog instead of letting a build hang.
+ */
+const DEADLINE_MS = Number(process.env.CONTENT_DEADLINE_MS ?? 20_000);
+
+class DeadlineError extends Error {
+  constructor(ms: number) {
+    super(`provider did not respond within ${ms}ms`);
+    this.name = "DeadlineError";
+  }
+}
+
+function withDeadline<T>(promise: Promise<T>, ms = DEADLINE_MS): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>;
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new DeadlineError(ms)), ms);
+    }),
+  ]).finally(() => clearTimeout(timer)) as Promise<T>;
+}
+
 interface Entry<T> {
   value: T;
   expires: number;
@@ -67,7 +94,10 @@ function enrichRows(rows: CatalogRow[]): CatalogRow[] {
 export async function getHomeRows(tabId: string = DEFAULT_TAB): Promise<CatalogResponse<CatalogRow[]>> {
   try {
     const rows = await memo(`home:${tabId}`, TTL_MS, async () => {
-      const [p1, p2] = await Promise.allSettled([fetchHomeRows(tabId, 1), fetchHomeRows(tabId, 2)]);
+      const [p1, p2] = await Promise.allSettled([
+        withDeadline(fetchHomeRows(tabId, 1)),
+        withDeadline(fetchHomeRows(tabId, 2)),
+      ]);
       const merged = [
         ...(p1.status === "fulfilled" ? p1.value : []),
         ...(p2.status === "fulfilled" ? p2.value : []),
@@ -91,7 +121,9 @@ export async function getSearch(query: string, page = 1): Promise<CatalogRespons
   const q = query.trim();
   if (!q) return { data: [], source: "live", fetchedAt: stamp() };
   try {
-    const items = await memo(`search:${q.toLowerCase()}:${page}`, TTL_MS, () => searchTitles(q, page));
+    const items = await memo(`search:${q.toLowerCase()}:${page}`, TTL_MS, () =>
+      withDeadline(searchTitles(q, page)),
+    );
     return { data: items, source: "live", fetchedAt: stamp() };
   } catch (err) {
     return {
@@ -113,7 +145,7 @@ export async function getTitle(id: string): Promise<CatalogResponse<TitleDetails
     };
   }
   try {
-    const details = await memo(`title:${id}`, TTL_MS, () => fetchDetails(id));
+    const details = await memo(`title:${id}`, TTL_MS, () => withDeadline(fetchDetails(id)));
     return { data: details, source: "live", fetchedAt: stamp() };
   } catch (err) {
     return {
