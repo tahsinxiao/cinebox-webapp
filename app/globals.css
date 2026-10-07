@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: "Inter", "Helvetica Neue", Arial, sans-serif;
+  --header-h: 68px;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-ink-950 text-white antialiased;
+    background-image:
+      radial-gradient(1200px 620px at 12% -8%, rgba(123, 61, 255, 0.28), transparent 62%),
+      radial-gradient(1000px 520px at 88% 4%, rgba(59, 22, 160, 0.3), transparent 60%),
+      linear-gradient(180deg, #0a0a12 0%, #05050a 46%, #05050a 100%);
+    background-attachment: fixed;
+  }
+  ::selection {
+    @apply bg-brand-500/60 text-white;
+  }
+}
+
+@layer components {
+  .wrap {
+    @apply mx-auto w-full max-w-[1760px] px-4 sm:px-6 lg:px-10;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold
+           transition-all duration-200 active:scale-[.97] focus-visible:outline-none
+           focus-visible:ring-2 focus-visible:ring-brand-300 focus-visible:ring-offset-2 focus-visible:ring-offset-ink-950;
+  }
+  .btn-primary {
+    @apply btn bg-white text-ink-950 hover:bg-white/85;
+  }
+  .btn-ghost {
+    @apply btn border border-white/25 bg-white/10 text-white backdrop-blur hover:border-white/50 hover:bg-white/20;
+  }
+  .btn-brand {
+    @apply btn bg-gradient-to-r from-brand-500 to-brand-700 text-white shadow-glow hover:from-brand-400 hover:to-brand-600;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[.06]
+           px-3 py-1 text-[11px] font-medium uppercase tracking-[.14em] text-white/70;
+  }
+
+  .rail-scroll {
+    @apply flex gap-3 overflow-x-auto scroll-smooth pb-2 md:gap-4;
+    scrollbar-width: none;
+  }
+  .rail-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  .skeleton {
+    @apply relative overflow-hidden bg-white/[.06];
+  }
+  .skeleton::after {
+    content: "";
+    @apply absolute inset-0 -translate-x-full animate-shimmer;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.09), transparent);
+  }
+
+  .edge-fade-b {
+    -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+}

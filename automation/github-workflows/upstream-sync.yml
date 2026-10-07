@@ -1,0 +1,138 @@
+name: Upstream sync (MovieBox-Tui)
+
+# Keeps well-cinebox permanently wired to https://github.com/mesamirh/MovieBox-Tui.
+# Every 3 hours (and on demand) we pull the newest upstream revision, re-vendor
+# the provider sources, regenerate the typed provider contract, verify the app
+# still builds, and push. The push triggers a fresh Vercel deployment, so any
+# upstream patch reaches production automatically.
+
+on:
+  schedule:
+    - cron: "0 */3 * * *"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Upstream ref to sync (branch, tag or SHA)"
+        required: false
+        default: "main"
+  push:
+    paths:
+      - "scripts/sync-upstream.mjs"
+      - ".github/workflows/upstream-sync.yml"
+
+concurrency:
+  group: upstream-sync-${{ github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout ${{ github.ref_name }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Pull upstream provider contract
+        id: sync
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          UPSTREAM_REF: ${{ inputs.ref || 'main' }}
+        run: npm run sync:upstream
+
+      - name: Detect changes
+        id: diff
+        run: |
+          if [ -n "$(git status --porcelain upstream lib/moviebox/generated)" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "summary<<EOF"
+              git status --porcelain upstream lib/moviebox/generated
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verify the app still builds against the new contract
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          npm run typecheck
+          npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+
+      - name: Commit & push
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          UP_SHA=$(node -p "require('./upstream/moviebox-tui/UPSTREAM.json').shortSha")
+          UP_MSG=$(node -p "require('./upstream/moviebox-tui/UPSTREAM.json').message")
+          git config user.name  "well-cinebox-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add upstream lib/moviebox/generated
+          git commit -m "chore(upstream): sync MovieBox-Tui @ ${UP_SHA}" -m "${UP_MSG}" -m "Automated by .github/workflows/upstream-sync.yml"
+          git push origin HEAD:${{ github.ref_name }}
+
+      - name: Trigger Vercel deployment
+        if: steps.diff.outputs.changed == 'true' && env.HOOK != ''
+        env:
+          HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        run: curl -fsS -X POST "$HOOK" -o /dev/null && echo "Vercel deploy hook fired."
+
+      - name: Report
+        run: |
+          {
+            echo "### Upstream sync — \`${{ github.ref_name }}\`"
+            echo
+            if [ "${{ steps.diff.outputs.changed }}" = "true" ]; then
+              echo "✅ Upstream changes pulled in and pushed."
+              echo
+              echo '```'
+              echo "${{ steps.diff.outputs.summary }}"
+              echo '```'
+            else
+              echo "No upstream provider changes — already up to date."
+            fi
+            echo
+            node -e "const u=require('./upstream/moviebox-tui/UPSTREAM.json');console.log('Upstream HEAD: '+u.shortSha+' — '+u.message);"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  notify-failure:
+    needs: sync
+    if: failure()
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const title = "Upstream sync failed — MovieBox provider contract drift";
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo, state: "open", labels: "upstream-sync",
+            });
+            const body = `The scheduled sync against \`mesamirh/MovieBox-Tui\` failed.\n\n` +
+              `This usually means the upstream Rust sources changed shape and \`scripts/sync-upstream.mjs\` ` +
+              `could no longer extract part of the provider contract (hosts, signing secret, endpoints, fingerprint).\n\n` +
+              `[Failed run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`;
+            if (issues.length === 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner, repo: context.repo.repo, title, body, labels: ["upstream-sync"],
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo, issue_number: issues[0].number, body,
+              });
+            }

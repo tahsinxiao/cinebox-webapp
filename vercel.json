@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "next build",
+  "installCommand": "npm ci --no-audit --no-fund",
+  "regions": ["iad1"],
+  "functions": {
+    "app/api/stream/route.ts": { "maxDuration": 60, "memory": 1024 },
+    "app/api/play/route.ts": { "maxDuration": 30 }
+  },
+  "headers": [
+    {
+      "source": "/api/stream",
+      "headers": [{ "key": "Cache-Control", "value": "private, no-store" }]
+    }
+  ]
+}

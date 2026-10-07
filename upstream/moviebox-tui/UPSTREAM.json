@@ -1,0 +1,21 @@
+{
+  "repo": "mesamirh/MovieBox-Tui",
+  "sha": "751fd0ec49e114d0ae849bf1dc52fec869d58e7d",
+  "shortSha": "751fd0e",
+  "message": "docs: synchronize test counts and updater restart details",
+  "author": "Samir Hossains",
+  "date": "2026-10-03T06:47:37Z",
+  "url": "https://github.com/mesamirh/MovieBox-Tui/commit/751fd0ec49e114d0ae849bf1dc52fec869d58e7d",
+  "vendored": [
+    "src/providers/moviebox/client.rs",
+    "src/providers/moviebox/crypto.rs",
+    "src/providers/moviebox/mod.rs",
+    "src/providers/moviebox/adapt.rs",
+    "src/providers/moviebox/title.rs",
+    "src/providers/moviebox/session.rs",
+    "src/providers/models.rs",
+    "Cargo.toml",
+    "LICENSE-MIT"
+  ],
+  "syncedAt": "2026-10-07T07:46:01.585Z"
+}
