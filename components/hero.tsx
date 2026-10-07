@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { gradientFor } from "./poster-card";
+import { gradientFor } from "./artwork";
 import type { CatalogItem } from "@/lib/types";
 
 const ROTATE_MS = 9000;

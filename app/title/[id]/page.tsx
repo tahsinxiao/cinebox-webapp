@@ -5,7 +5,7 @@ import { EpisodePicker } from "@/components/episode-picker";
 import { Rail } from "@/components/rail";
 import { TitleActions } from "@/components/title-actions";
 import { OfflineBadge } from "@/components/brand";
-import { ArtworkFallback, gradientFor } from "@/components/poster-card";
+import { ArtworkFallback, gradientFor } from "@/components/artwork";
 import { getRelated, getTitle } from "@/lib/content";
 
 export const revalidate = 600;

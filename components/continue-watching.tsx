@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { clearProgress, getProgress, onStoreChange, type ProgressEntry } from "@/lib/local-store";
-import { gradientFor } from "./poster-card";
+import { gradientFor } from "./artwork";
 
 export function ContinueWatching() {
   const [entries, setEntries] = useState<ProgressEntry[]>([]);
